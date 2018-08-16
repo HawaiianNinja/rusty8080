@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 
 mod disassembler;
-
+mod emulator;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -16,11 +16,16 @@ fn main() {
 
             disassemle_all(filename, requested_bytes);
         }
+        "emu" => {
+            if args.len() <= 1 {println!("Expected file name"); return; }
+            let filename = &args[2];
+            emulate(filename);
+        }
         _ => { println!("{} is not valid", operation)}
     }
 }
 
-fn disassemle_all(filename: &String, requested_bytes: usize) -> () {
+fn disassemle_all(filename: &String, requested_bytes: usize) {
     println!("Opening: {}", filename);
     let contents = fs::read(filename)
         .expect("Could not open file");
@@ -30,6 +35,14 @@ fn disassemle_all(filename: &String, requested_bytes: usize) -> () {
         program_counter += byes_used;
         println!("{}", code);
     }
+}
+
+fn emulate(filename: &String) {
+    println!("Opening: {}", filename);
+    let contents = fs::read(filename)
+        .expect("Could not open file");
+    let mut state = emulator::State8080::new(contents);
+    emulator::emulate_op(&mut state);
 }
 
 
