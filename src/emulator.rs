@@ -4,7 +4,7 @@ const MAX_U8: u8 = <u8>::max_value();
 struct ConditionCodes {
     z: bool,   // Zero, 1 when a is 0, else 0
     s: bool,   // Sign, 1 when bit 7 (MSB) is set in register a, else 0
-    p: bool,   // Parity, 1 when the answer has even parity, else 0
+    p: bool,   // Parity, 1 when the answer has an even number of 1 bits
     cy: bool,  // Carry, 1 when the previous instruction resulted in a carry, else 0
     ac: bool,  // Auxiliary carry
     pad: bool, // ?
@@ -64,12 +64,11 @@ pub fn emulate_op(state: &mut State8080) {
 
     match code {
         0x00 => {} // NOP
-        0x01 => {
-            //LXI B, B <- byte 3, C <- byte 2
+        0x01 => { //LXI B, B <- byte 3, C <- byte 2
             state.c = state.get_and_advance();
             state.b = state.get_and_advance();
         }
-        0x02 => {
+        0x02 => { // STAX B
             let destination = combine_registers(state.b, state.c) as usize;
             state.memory[destination] = state.a;
         }
@@ -83,7 +82,7 @@ pub fn emulate_op(state: &mut State8080) {
         0x83 => { add(state.e, state); }
         0x84 => { add(state.h, state); }
         0x85 => { add(state.l, state); }
-        0x86 => {
+        0x86 => { // ADD M
             let address = combine_registers(state.h, state.l) as usize;
             let val = state.memory[address];
             add(val, state);
@@ -95,21 +94,21 @@ pub fn emulate_op(state: &mut State8080) {
         0x8b => { adc(state.e, state); }
         0x8c => { adc(state.h, state); }
         0x8d => { adc(state.l, state); }
-        0x8e => {
+        0x8e => { //ADC M
             let address = combine_registers(state.h, state.l) as usize;
             let val = state.memory[address];
             add(val, state);
         }
         0x8f => { adc(state.a, state); }
-        0xc2 => {
-            if state.cc.z {
-                state.pc += 2;
-            } else {
-                jmp(state);
-            }
+        0xc2 => { // JNZ
+            conditional_jmp(!state.cc.z, state);
+
         }
-        0xc3 => {
+        0xc3 => { // JMP
             jmp(state);
+        }
+        0xca => { // JZ
+            conditional_jmp(state.cc.z, state);
         }
         0xcd => { // CALL
             let return_address = state.pc + 2;
@@ -124,8 +123,30 @@ pub fn emulate_op(state: &mut State8080) {
             state.pc = combine_registers(upper, lower);
             state.sp += 2;
         }
+        0xd2 => { // JNC
+            conditional_jmp(!state.cc.cy, state);
+
+        }
+        0xda => { // JC
+            conditional_jmp(state.cc.cy, state);
+        }
+        0xe2 => { //JPO
+            conditional_jmp(!state.cc.p, state);
+        }
+        0xea => { // JPE
+            conditional_jmp(state.cc.p, state);
+
+        }
 
         _ => { println!("Unkown op code {:02x} ", code); }
+    }
+}
+
+fn conditional_jmp(condition: bool, state: &mut State8080) {
+    if condition {
+        jmp(state);
+    } else {
+        state.pc += 2;
     }
 }
 
@@ -155,8 +176,24 @@ fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
     state.cc.z = answer as u8 & 0xff == 0;
     state.cc.s = answer as u8 & 0x80 > 0;
     state.cc.cy = answer > 0xff;
-    // state->cc.p = Parity( answer & 0xff);
+    state.cc.p = parity(answer as usize, 8);
     state.a = answer as u8;
+}
+
+fn parity(value_to_check: usize, size: usize) -> bool
+{
+    let mut set_bits = 0;
+    let mut mask : usize = 1;
+    mask = mask << size; // 0xff
+    mask -= 1; // 0xfe
+    let mut temp = value_to_check & mask;
+    for _number in 0..size {
+        if temp & 0x1  == 0x1 {
+            set_bits += 1;
+        }
+        temp = temp >> 1;
+    }
+    return 0 == (set_bits & 0x1);
 }
 
 // inx B -> BC + 1 add one to lower then carry to upper
@@ -219,25 +256,50 @@ mod tests {
         assert_eq!(true, state.cc.z);
         assert_eq!(false, state.cc.s);
         assert_eq!(false, state.cc.cy);
+        assert_eq!(true, state.cc.p); // 000
+
 
         add(1, &mut state);
         assert_eq!(1, state.a);
         assert_eq!(false, state.cc.z);
         assert_eq!(false, state.cc.s);
         assert_eq!(false, state.cc.cy);
+        assert_eq!(false, state.cc.p); // 001
+
+        add(1, &mut state);
+        assert_eq!(2, state.a);
+        assert_eq!(false, state.cc.z);
+        assert_eq!(false, state.cc.s);
+        assert_eq!(false, state.cc.cy);
+        assert_eq!(false, state.cc.p); // 010
 
         add(200, &mut state);
-        assert_eq!(201, state.a);
+        assert_eq!(202, state.a);
         assert_eq!(false, state.cc.z);
         assert_eq!(true, state.cc.s);
         assert_eq!(false, state.cc.cy);
+        assert_eq!(true, state.cc.p); // 11001010
 
-        add(200, &mut state);
-        // 200 + 201 = 401 = 0x191, which gets truncated to 0x91 which is 145
-        assert_eq!(145, state.a);
+
+        add(202, &mut state);
+        // 202 + 202 = 404 = 0x194, which gets truncated to 0x94 which is 148
+        assert_eq!(148, state.a);
         assert_eq!(false, state.cc.z);
         assert_eq!(true, state.cc.s);
         assert_eq!(true, state.cc.cy);
+        assert_eq!(false, state.cc.p); //10010100
+    }
+
+    #[test]
+    fn test_parity() {
+        assert_eq!(true, parity(0b0000, 4));
+        assert_eq!(true, parity(0b00000, 5));
+        assert_eq!(false, parity(0b00001, 5));
+        assert_eq!(false, parity(0b10000, 5));
+        assert_eq!(false, parity(0b01000, 5));
+        assert_eq!(true, parity(0b01000100, 8));
+        assert_eq!(true, parity(0b0100000, 2));
+        assert_eq!(true, parity(0b011111111, 8));
     }
 
     #[test]
