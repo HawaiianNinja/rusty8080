@@ -255,16 +255,33 @@ mod tests {
     #[test]
     fn test_call() {
         let mut state = setup_state();
+        state.sp = 100;
         state.pc = 0x1234; // start somewhere interesting
         state.memory[0x1234] = 0xcd; // CALL op code
         state.memory[0x1235] = 0x11; // lower half of address
         state.memory[0x1236] = 0x22; // upper half of address
 
         emulate_op(&mut state);
-        assert_eq!(state.pc, 0x2211);
 
+        assert_eq!(state.pc, 0x2211);
         assert_eq!(state.sp, 98);
         assert_eq!(state.memory[99], 0x12);
         assert_eq!(state.memory[98], 0x37); // 1234 + 1 for jump + 2 for jmp address
+    }
+
+    #[test]
+    fn test_ret() {
+        let mut state = setup_state();
+
+        state.sp = 100;
+        state.pc = 0x3456; // start somewhere interesting
+        state.memory[0x3456] = 0xc9; // RET op code
+        state.memory[100] = 0x11; // lower half of address
+        state.memory[101] = 0x22; // upper half of address
+
+        emulate_op(&mut state);
+
+        assert_eq!(state.pc, 0x1122);
+        assert_eq!(state.sp, 102);
     }
 }
