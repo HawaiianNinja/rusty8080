@@ -71,23 +71,58 @@ pub fn emulate_op(state: &mut State8080) {
             state.b = state.get_and_advance();
         }
         0x02 => {
-            let mut destination: usize = state.b as usize;
-            destination <<= 8;
-            destination |= state.c as usize;
+            let destination = convert_reg_to_memory(state.b, state.c);
             state.memory[destination] = state.a;
         }
         0x03 => {
             inx(&mut state.b, &mut state.c)
         }
-        0x81 => { // ADD C
-            add(state.c, state);
+        0x80 => { add(state.b, state); }
+        0x81 => { add(state.c, state); }
+        0x82 => { add(state.d, state); }
+        0x83 => { add(state.e, state); }
+        0x84 => { add(state.h, state); }
+        0x85 => { add(state.l, state); }
+        0x86 => {
+            let address = convert_reg_to_memory(state.h, state.l);
+            let val = state.memory[address];
+            add(val, state);
         }
+        0x87 => { adc(state.a, state); }
+        0x88 => { adc(state.b, state); }
+        0x89 => { adc(state.c, state); }
+        0x8a => { adc(state.d, state); }
+        0x8b => { adc(state.e, state); }
+        0x8c => { adc(state.h, state); }
+        0x8d => { adc(state.l, state); }
+        0x8e => {
+            let address = convert_reg_to_memory(state.h, state.l);
+            let val = state.memory[address];
+            add(val, state);
+        }
+        0x8f => { adc(state.a, state); }
+
         _ => { println!("Unkown op code {:02x} ", code); }
     }
 }
 
-fn add(a: u8, state: &mut State8080) {
-    let answer :u16 = state.a as u16 + a as u16;
+fn convert_reg_to_memory(upper: u8, lower: u8) -> usize {
+    let mut destination: usize = upper as usize;
+    destination <<= 8;
+    destination |= lower as usize;
+    return destination;
+}
+
+fn add(value: u8, state: &mut State8080) {
+    add_core(value, state, false);
+}
+
+fn adc(value: u8, state: &mut State8080) {
+    add_core(value, state, true);
+}
+
+fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
+    let answer :u16 = state.a as u16 + value as u16 + if use_carry && state.cc.cy {1} else {0};
     state.cc.z = answer as u8 & 0xff == 0;
     state.cc.s = answer as u8 & 0x80 > 0;
     state.cc.cy = answer > 0xff;

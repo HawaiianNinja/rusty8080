@@ -1,5 +1,5 @@
 [package]
-name = "rustemulator"
+name = "rusty8080"
 version = "0.1.0"
 authors = ["Andrew Hopkins <andrewjohnhopkins@gmail.com>"]
 
