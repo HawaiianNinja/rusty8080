@@ -12,8 +12,7 @@ struct ConditionCodes {
 
 #[derive(Debug)]
 pub struct State8080 {
-    a: u8,
-    // a.k.a. accumulator register
+    a: u8, // a.k.a. accumulator register
     b: u8,
     c: u8,
     d: u8,
@@ -45,7 +44,7 @@ impl State8080 {
             e: 0,
             h: 0,
             l: 0,
-            sp: 0,
+            sp: 0, // Must be initialized by the program to somewhere not used to store game data or heap
             pc: 0,
             memory: game_data.clone(),
             cc: codes,
@@ -71,12 +70,13 @@ pub fn emulate_op(state: &mut State8080) {
             state.b = state.get_and_advance();
         }
         0x02 => {
-            let destination = convert_reg_to_memory(state.b, state.c);
+            let destination = combine_registers(state.b, state.c) as usize;
             state.memory[destination] = state.a;
         }
-        0x03 => {
-            inx(&mut state.b, &mut state.c)
-        }
+        0x03 => { inx(&mut state.b, &mut state.c); }
+        0x13 => { inx(&mut state.d, &mut state.e); }
+        0x23 => { inx(&mut state.h, &mut state.l); }
+        0x33 => { state.sp += 1; }
         0x80 => { add(state.b, state); }
         0x81 => { add(state.c, state); }
         0x82 => { add(state.d, state); }
@@ -84,7 +84,7 @@ pub fn emulate_op(state: &mut State8080) {
         0x84 => { add(state.h, state); }
         0x85 => { add(state.l, state); }
         0x86 => {
-            let address = convert_reg_to_memory(state.h, state.l);
+            let address = combine_registers(state.h, state.l) as usize;
             let val = state.memory[address];
             add(val, state);
         }
@@ -96,20 +96,49 @@ pub fn emulate_op(state: &mut State8080) {
         0x8c => { adc(state.h, state); }
         0x8d => { adc(state.l, state); }
         0x8e => {
-            let address = convert_reg_to_memory(state.h, state.l);
+            let address = combine_registers(state.h, state.l) as usize;
             let val = state.memory[address];
             add(val, state);
         }
         0x8f => { adc(state.a, state); }
+        0xc2 => {
+            if state.cc.z {
+                state.pc += 2;
+            } else {
+                jmp(state);
+            }
+        }
+        0xc3 => {
+            jmp(state);
+        }
+        0xcd => { // CALL
+            let return_address = state.pc + 2;
+            state.memory[(state.sp - 1) as usize] = ((return_address >> 8) & 0xff) as u8;
+            state.memory[(state.sp - 2) as usize] = (return_address & 0xff) as u8;
+            state.sp -= 2;
+            jmp(state);
+        }
+        0xc9 => { // RET
+            let upper = state.memory[state.sp as usize];
+            let lower = state.memory[(state.sp + 1) as usize];
+            state.pc = combine_registers(upper, lower);
+            state.sp += 2;
+        }
 
         _ => { println!("Unkown op code {:02x} ", code); }
     }
 }
 
-fn convert_reg_to_memory(upper: u8, lower: u8) -> usize {
-    let mut destination: usize = upper as usize;
+fn jmp(state: &mut State8080) {
+    let lower = state.get_and_advance();
+    let upper = state.get_and_advance();
+    state.pc = combine_registers(upper, lower);
+}
+
+fn combine_registers(upper: u8, lower: u8) -> u16 {
+    let mut destination: u16 = upper as u16;
     destination <<= 8;
-    destination |= lower as usize;
+    destination |= lower as u16;
     return destination;
 }
 
@@ -155,6 +184,13 @@ mod tests {
     use emulator::State8080;
     use emulator::*;
 
+    fn setup_state() -> State8080 {
+        let contents = vec![0; 64_000];
+        let mut state =  State8080::new(contents);
+        state.sp = 100;
+        return state;
+    }
+
     #[test]
     fn test_inx() {
         let mut lower: u8 = 0;
@@ -177,8 +213,7 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let contents = Vec::new();
-        let mut state = State8080::new(contents);
+        let mut state = setup_state();
         add(0, &mut state);
         assert_eq!(0, state.a);
         assert_eq!(true, state.cc.z);
@@ -203,5 +238,33 @@ mod tests {
         assert_eq!(false, state.cc.z);
         assert_eq!(true, state.cc.s);
         assert_eq!(true, state.cc.cy);
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut state = setup_state();
+        state.memory[0] = 0xc3; // JMP op code
+        state.memory[1] = 0x11; // lower half of address
+        state.memory[2] = 0x22; // upper half of address
+
+        emulate_op(&mut state);
+
+        assert_eq!(state.pc, 0x2211);
+    }
+
+    #[test]
+    fn test_call() {
+        let mut state = setup_state();
+        state.pc = 0x1234; // start somewhere interesting
+        state.memory[0x1234] = 0xcd; // CALL op code
+        state.memory[0x1235] = 0x11; // lower half of address
+        state.memory[0x1236] = 0x22; // upper half of address
+
+        emulate_op(&mut state);
+        assert_eq!(state.pc, 0x2211);
+
+        assert_eq!(state.sp, 98);
+        assert_eq!(state.memory[99], 0x12);
+        assert_eq!(state.memory[98], 0x37); // 1234 + 1 for jump + 2 for jmp address
     }
 }
