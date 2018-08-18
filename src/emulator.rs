@@ -73,6 +73,7 @@ pub fn emulate_op(state: &mut State8080) {
             state.memory[destination] = state.a;
         }
         0x03 => { inx(&mut state.b, &mut state.c); }
+        0x04 => { inr(&mut state.b, &mut state.cc); }
         0x13 => { inx(&mut state.d, &mut state.e); }
         0x23 => { inx(&mut state.h, &mut state.l); }
         0x33 => { state.sp += 1; }
@@ -173,11 +174,15 @@ fn adc(value: u8, state: &mut State8080) {
 
 fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
     let answer :u16 = state.a as u16 + value as u16 + if use_carry && state.cc.cy {1} else {0};
-    state.cc.z = answer as u8 & 0xff == 0;
-    state.cc.s = answer as u8 & 0x80 > 0;
-    state.cc.cy = answer > 0xff;
-    state.cc.p = parity(answer as usize, 8);
+    update_flags(answer, &mut state.cc);
     state.a = answer as u8;
+}
+
+fn update_flags(value : u16, codes : &mut ConditionCodes) {
+    codes.z = value as u8 & 0xff == 0;
+    codes.s = value as u8 & 0x80 > 0;
+    codes.cy = value > 0xff;
+    codes.p = parity(value as usize, 8);
 }
 
 fn parity(value_to_check: usize, size: usize) -> bool
@@ -213,6 +218,12 @@ fn inx(upper: &mut u8, lower: &mut u8) {
             *upper = 0;
         }
     }
+}
+
+fn inr(value: &mut u8, codes : &mut ConditionCodes) {
+    let answer : u16 = *value as u16 + 1;
+    update_flags(answer, codes);
+    *value = answer as u8;
 }
 
 
@@ -345,5 +356,48 @@ mod tests {
 
         assert_eq!(state.pc, 0x1122);
         assert_eq!(state.sp, 102);
+    }
+
+    #[test]
+    fn test_inr() {
+        let mut codes = ConditionCodes {
+            z: false,
+            s: false,
+            p: false,
+            cy: false,
+            ac: false,
+            pad: false,
+        };
+
+        let mut test :u8 = 0;
+        inr(&mut test, &mut codes);
+        assert_eq!(test, 1);
+        assert_eq!(false, codes.z);
+        assert_eq!(false, codes.s);
+        assert_eq!(false, codes.p);
+        assert_eq!(false, codes.cy);
+
+        inr(&mut test, &mut codes);
+        assert_eq!(test, 2);
+        assert_eq!(false, codes.z);
+        assert_eq!(false, codes.s);
+        assert_eq!(false, codes.p);
+        assert_eq!(false, codes.cy);
+
+        inr(&mut test, &mut codes);
+        assert_eq!(test, 3);
+        assert_eq!(false, codes.z);
+        assert_eq!(false, codes.s);
+        assert_eq!(true, codes.p);
+        assert_eq!(false, codes.cy);
+
+        test = 255;
+        inr(&mut test, &mut codes);
+        assert_eq!(test, 0);
+        assert_eq!(true, codes.z);
+        assert_eq!(false, codes.s);
+        assert_eq!(true, codes.p);
+        assert_eq!(true, codes.cy);
+
     }
 }
