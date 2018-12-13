@@ -19,7 +19,7 @@ fn main() {
             let filename = &args[2];
             let requested_bytes : usize = if args.len() <= 3 { 10 } else { let x =  &args[3].parse::<usize>().unwrap_or(10); *x };
 
-            disassemle_all(filename, requested_bytes);
+            disassemle(filename, requested_bytes);
         }
         "emu" => {
             if args.len() <= 2 {println!("Expected file name"); return; }
@@ -30,7 +30,7 @@ fn main() {
     }
 }
 
-fn disassemle_all(filename: &String, requested_bytes: usize) {
+fn disassemle(filename: &String, requested_bytes: usize) {
     println!("Opening: {}", filename);
     let contents = fs::read(filename)
         .expect("Could not open file");

@@ -74,6 +74,20 @@ pub fn emulate_op(state: &mut State8080) {
         }
         0x03 => { inx(&mut state.b, &mut state.c); }
         0x04 => { inr(&mut state.b, &mut state.cc); }
+        0x05 => { dcr(&mut state.b, &mut state.cc); }
+        0x06 => { //MVI B
+            state.b = state.get_and_advance();
+        }
+        0x07 => { // RLC with carry
+            let acc = state.a;
+            state.cc.cy = acc >> 7 == 1;
+            state.a = acc << 1;
+            if state.cc.cy {
+                state.a += 1;
+            }
+        }
+        0x08 => {} // NOP
+        0x09 => { dad(&mut state.h, &mut state.l, &mut state.b, &mut state.c, &mut state.cc); }
         0x13 => { inx(&mut state.d, &mut state.e); }
         0x23 => { inx(&mut state.h, &mut state.l); }
         0x33 => { state.sp += 1; }
@@ -201,6 +215,25 @@ fn parity(value_to_check: usize, size: usize) -> bool
     return 0 == (set_bits & 0x1);
 }
 
+// dad B = h,l = b,c + h,l
+fn dad(upperSave: &mut u8, lowerSave: &mut u8, upper2: &mut u8, lower2: &mut u8, state: &mut State8080) {
+    let tempLower: u16 = *lowerSave as u16 + *lower2 as u16;
+    let mut tempUpper : u16 = *upperSave as u16 + *upper2 as u16;
+    if tempLower > MAX_U8 as u16 {
+        *lowerSave = 0;
+        tempUpper += 1;
+    } else {
+        *lowerSave = tempLower as u8;
+    }
+    if tempUpper > MAX_U8 as u16{
+        state.cc.cy = true;
+        *upperSave = 0;
+    } else {
+        state.cc.cy = false;
+        *upperSave = tempUpper as u8;
+    }
+}
+
 // inx B -> BC + 1 add one to lower then carry to upper
 fn inx(upper: &mut u8, lower: &mut u8) {
     let mut carry = false;
@@ -226,6 +259,11 @@ fn inr(value: &mut u8, codes : &mut ConditionCodes) {
     *value = answer as u8;
 }
 
+fn dcr(value: &mut u8, codes : &mut ConditionCodes) {
+    let answer : u16 = *value as u16 - 1;
+    update_flags(answer, codes);
+    *value = answer as u8;
+}
 
 #[cfg(test)]
 mod tests {
