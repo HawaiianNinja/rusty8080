@@ -5,6 +5,11 @@ use clap::App;
 use clap::Arg;
 use clap::ArgGroup;
 use log::info;
+use simplelog::CombinedLogger;
+use simplelog::Config;
+use simplelog::WriteLogger;
+use simplelog::TermLogger;
+use log::LevelFilter;
 
 mod disassembler;
 mod emulator;
@@ -42,9 +47,16 @@ fn main() {
             .long("logLevel")
             .value_name("LEVEL")
             .default_value("debug")
-            .possible_values(["debug", "info", "error"].as_ref())
+            .possible_values(&["debug", "info", "error", "off"])
             .help("Sets the level of logging"))
         .get_matches();
+
+    CombinedLogger::init(
+        vec![
+            TermLogger::new(LevelFilter::Debug, Config::default()).unwrap(),
+            WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("rusty8080.log").unwrap()),
+        ]
+    ).unwrap();
 
     let filename = args.value_of("file").unwrap();
 
