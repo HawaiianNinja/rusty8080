@@ -4,8 +4,7 @@ use std::io::prelude::*;
 use clap::App;
 use clap::Arg;
 use clap::ArgGroup;
-#[macro_use]
-extern crate log;
+use log::info;
 
 mod disassembler;
 mod emulator;

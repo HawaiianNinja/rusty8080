@@ -1,3 +1,5 @@
+use log::error;
+
 const MAX_U8: u8 = <u8>::max_value();
 
 #[derive(Debug)]
@@ -267,8 +269,8 @@ fn dcr(value: &mut u8, codes : &mut ConditionCodes) {
 
 #[cfg(test)]
 mod tests {
-    use emulator::State8080;
-    use emulator::*;
+    use crate::emulator::State8080;
+    use crate::emulator::*;
 
     fn setup_state() -> State8080 {
         let contents = vec![0; 64_000];
