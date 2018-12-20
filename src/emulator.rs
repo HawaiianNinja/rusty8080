@@ -1,4 +1,6 @@
 use log::error;
+use log::debug;
+use crate::disassembler::disassemble_8080_op;
 
 const MAX_U8: u8 = <u8>::max_value();
 
@@ -62,6 +64,8 @@ impl State8080 {
 }
 
 pub fn emulate_op(state: &mut State8080) {
+    let (op, _) = disassemble_8080_op(&state.memory, state.pc as usize);
+    debug!("{:22} pc: {:5} sp:{:5} a:{:3} b:{:3} c:{:3} d:{:3} e:{:3} h:{:3} l:{:3} {:?}", op, state.pc, state.sp, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.cc);
     let code = state.get_and_advance();
 
     match code {
@@ -155,7 +159,7 @@ pub fn emulate_op(state: &mut State8080) {
 
         }
 
-        _ => { error!("Unkown op code {:02x} ", code); }
+        _ => { error!("Skipped {}", code); }
     }
 }
 

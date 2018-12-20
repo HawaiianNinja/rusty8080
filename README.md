@@ -4,8 +4,6 @@ A emulator for the 8080 CPU written in Rust. Based on the guide from emulator101
 # Example
 ```
 cargo run -- -h
-    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
-     Running `target/debug/rusty8080 -h`
 rusty8080 0.1.0
 Andrew Hopkins <andrewjohnhopkins@gmail.com>
 Emulates programs for the Intel 8080
@@ -21,6 +19,8 @@ FLAGS:
 
 OPTIONS:
     -f, --file <PATH_TO_FILE>    The file to emulate
-    -l, --logLevel <LEVEL>       Sets the level of logging [default: debug]  [possible values: debug, info, error]
+    -l, --logFile <FILE>         Sets the log config
     -n, --numOps <numOps>        Number of operations to disassemble [default: 10]
+
+cargo run -- -e -f invaders.atari -l log4rs.yaml
 ```

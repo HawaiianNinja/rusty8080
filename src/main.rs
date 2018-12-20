@@ -1,15 +1,8 @@
 use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
 use clap::App;
 use clap::Arg;
 use clap::ArgGroup;
 use log::info;
-use simplelog::CombinedLogger;
-use simplelog::Config;
-use simplelog::WriteLogger;
-use simplelog::TermLogger;
-use log::LevelFilter;
 
 mod disassembler;
 mod emulator;
@@ -42,21 +35,16 @@ fn main() {
             .required(true)
             .help("The file to emulate")
             .takes_value(true))
-        .arg(Arg::with_name("logLevel")
+        .arg(Arg::with_name("logFile")
             .short("l")
-            .long("logLevel")
-            .value_name("LEVEL")
-            .default_value("debug")
-            .possible_values(&["debug", "info", "error", "off"])
-            .help("Sets the level of logging"))
+            .long("logFile")
+            .value_name("FILE")
+            .help("Sets the log config"))
         .get_matches();
 
-    CombinedLogger::init(
-        vec![
-            TermLogger::new(LevelFilter::Debug, Config::default()).unwrap(),
-            WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("rusty8080.log").unwrap()),
-        ]
-    ).unwrap();
+    let log_file = args.value_of("logFile").unwrap();
+
+    log4rs::init_file(log_file, Default::default()).unwrap();
 
     let filename = args.value_of("file").unwrap();
 
@@ -64,11 +52,11 @@ fn main() {
         emulate(filename);
     } else {
         let num_bytes = args.value_of("numOps").unwrap().parse::<usize>().unwrap_or(10);
-        disassemle(filename, num_bytes);
+        disassemble(filename, num_bytes);
     }
 }
 
-fn disassemle(filename: &str, requested_bytes: usize) {
+fn disassemble(filename: &str, requested_bytes: usize) {
     info!("Opening: {}", filename);
     let contents = fs::read(filename)
         .expect("Could not open file");
@@ -82,14 +70,12 @@ fn disassemle(filename: &str, requested_bytes: usize) {
 
 fn emulate(filename: &str) {
     info!("Opening: {}", filename);
-    let mut game_file = File::open(filename).expect("Failed to open file!");
-
-    // 8080 has 64 KB of memory
-    let mut game_memory = vec![0; 64_000];
-
-    // Load the game into the game_memory starting at 0
-    game_file.read_to_end(&mut game_memory).expect("Failed to read game into memory!");
+    let mut game_memory = fs::read(filename)
+        .expect("Could not open file");
+    game_memory.resize(64_000, 0);
 
     let mut state = emulator::State8080::new(game_memory);
-    emulator::emulate_op(&mut state);
+    for _ in 0..10 {
+        emulator::emulate_op(&mut state);
+    }
 }
