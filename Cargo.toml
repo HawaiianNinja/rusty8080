@@ -2,5 +2,9 @@
 name = "rusty8080"
 version = "0.1.0"
 authors = ["Andrew Hopkins <andrewjohnhopkins@gmail.com>"]
+edition = "2018"
 
 [dependencies]
+clap = "2.32.0"
+log = "0.4"
+simplelog = "^0.5.0"

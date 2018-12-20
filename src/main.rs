@@ -1,37 +1,64 @@
-use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
+use clap::App;
+use clap::Arg;
+use clap::ArgGroup;
+#[macro_use]
+extern crate log;
 
 mod disassembler;
 mod emulator;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() == 1 {
-        println!("Please specify operation to run: 'dis' or 'emu'!");
-        return;
-    }
-    let operation = &args[1];
-    match operation.as_ref() {
-        "dis" => {
-            if args.len() <= 2 {println!("Expected file name"); return; }
-            let filename = &args[2];
-            let requested_bytes : usize = if args.len() <= 3 { 10 } else { let x =  &args[3].parse::<usize>().unwrap_or(10); *x };
+    let args = App::new("rusty8080")
+        .version("0.1.0")
+        .author("Andrew Hopkins <andrewjohnhopkins@gmail.com>")
+        .about("Emulates programs for the Intel 8080")
+        .group(ArgGroup::with_name("mode")
+            .args(&["emulate", "disassemble"])
+            .required(true))
+        .arg(Arg::with_name("emulate")
+            .short("e")
+            .long("emulate")
+            .help("Emulate the program"))
+        .arg(Arg::with_name("disassemble")
+            .short("d")
+            .long("disassemble")
+            .help("Disassemble the file for numOps commands"))
+        .arg(Arg::with_name("numOps")
+            .short("n")
+            .long("numOps")
+            .default_value("10")
+            .help("Number of operations to disassemble"))
+        .arg(Arg::with_name("file")
+            .short("f")
+            .long("file")
+            .value_name("PATH_TO_FILE")
+            .required(true)
+            .help("The file to emulate")
+            .takes_value(true))
+        .arg(Arg::with_name("logLevel")
+            .short("l")
+            .long("logLevel")
+            .value_name("LEVEL")
+            .default_value("debug")
+            .possible_values(["debug", "info", "error"].as_ref())
+            .help("Sets the level of logging"))
+        .get_matches();
 
-            disassemle(filename, requested_bytes);
-        }
-        "emu" => {
-            if args.len() <= 2 {println!("Expected file name"); return; }
-            let filename = &args[2];
-            emulate(filename);
-        }
-        _ => { println!("{} is not valid", operation)}
+    let filename = args.value_of("file").unwrap();
+
+    if args.is_present("emulate") {
+        emulate(filename);
+    } else {
+        let num_bytes = args.value_of("numOps").unwrap().parse::<usize>().unwrap_or(10);
+        disassemle_all(filename, num_bytes);
     }
 }
 
-fn disassemle(filename: &String, requested_bytes: usize) {
-    println!("Opening: {}", filename);
+fn disassemle_all(filename: &str, requested_bytes: usize) {
+    info!("Opening: {}", filename);
     let contents = fs::read(filename)
         .expect("Could not open file");
     let mut program_counter: usize = 0;
@@ -42,8 +69,8 @@ fn disassemle(filename: &String, requested_bytes: usize) {
     }
 }
 
-fn emulate(filename: &String) {
-    println!("Opening: {}", filename);
+fn emulate(filename: &str) {
+    info!("Opening: {}", filename);
     let mut game_file = File::open(filename).expect("Failed to open file!");
 
     // 8080 has 64 KB of memory

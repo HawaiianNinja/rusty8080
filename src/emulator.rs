@@ -153,7 +153,7 @@ pub fn emulate_op(state: &mut State8080) {
 
         }
 
-        _ => { println!("Unkown op code {:02x} ", code); }
+        _ => { error!("Unkown op code {:02x} ", code); }
     }
 }
 
@@ -216,21 +216,21 @@ fn parity(value_to_check: usize, size: usize) -> bool
 }
 
 // dad B = h,l = b,c + h,l
-fn dad(upperSave: &mut u8, lowerSave: &mut u8, upper2: &mut u8, lower2: &mut u8, state: &mut State8080) {
-    let tempLower: u16 = *lowerSave as u16 + *lower2 as u16;
-    let mut tempUpper : u16 = *upperSave as u16 + *upper2 as u16;
-    if tempLower > MAX_U8 as u16 {
-        *lowerSave = 0;
-        tempUpper += 1;
+fn dad(upper_save: &mut u8, lower_save: &mut u8, upper2: &mut u8, lower2: &mut u8, cc: &mut ConditionCodes) {
+    let temp_lower: u16 = *lower_save as u16 + *lower2 as u16;
+    let mut temp_upper : u16 = *upper_save as u16 + *upper2 as u16;
+    if temp_lower > MAX_U8 as u16 {
+        *lower_save = 0;
+        temp_upper += 1;
     } else {
-        *lowerSave = tempLower as u8;
+        *lower_save = temp_lower as u8;
     }
-    if tempUpper > MAX_U8 as u16{
-        state.cc.cy = true;
-        *upperSave = 0;
+    if temp_upper > MAX_U8 as u16{
+        cc.cy = true;
+        *upper_save = 0;
     } else {
-        state.cc.cy = false;
-        *upperSave = tempUpper as u8;
+        cc.cy = false;
+        *upper_save = temp_upper as u8;
     }
 }
 
