@@ -52,11 +52,11 @@ fn main() {
         emulate(filename);
     } else {
         let num_bytes = args.value_of("numOps").unwrap().parse::<usize>().unwrap_or(10);
-        disassemle_all(filename, num_bytes);
+        disassemle(filename, num_bytes);
     }
 }
 
-fn disassemle_all(filename: &str, requested_bytes: usize) {
+fn disassemle(filename: &str, requested_bytes: usize) {
     info!("Opening: {}", filename);
     let contents = fs::read(filename)
         .expect("Could not open file");
