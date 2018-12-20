@@ -1,8 +1,10 @@
 # rusty8080
 A emulator for the 8080 CPU written in Rust. Based on the guide from [emulator101.com](emulator101.com). The [Intel 8080 programming manual](http://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf) is also handy.
 
-# Example
+# Usage
 ```
+cargo run -- -e -f invaders.atari -l log4rs.yaml
+...
 cargo run -- -h
 rusty8080 0.1.0
 Andrew Hopkins <andrewjohnhopkins@gmail.com>
@@ -21,6 +23,4 @@ OPTIONS:
     -f, --file <PATH_TO_FILE>    The file to emulate
     -l, --logFile <FILE>         Sets the log config
     -n, --numOps <numOps>        Number of operations to disassemble [default: 10]
-
-cargo run -- -e -f invaders.atari -l log4rs.yaml
 ```
