@@ -65,7 +65,15 @@ impl State8080 {
 
 pub fn emulate_op(state: &mut State8080) {
     let (op, _) = disassemble_op(&state.memory, state.pc as usize);
-    debug!("{:19} pc: {:4x} sp:{:4x} a:{:2x} b:{:2x} c:{:2x} d:{:2x} e:{:2x} h:{:2x} l:{:2x} {:?}", op, state.pc, state.sp, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.cc);
+//    debug!("{:19} pc: {:4x} sp:{:4x} a:{:2x} b:{:2x} c:{:2x} d:{:2x} e:{:2x} h:{:2x} l:{:2x} {:?}", op, state.pc, state.sp, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.cc);
+    let z = if state.cc.z {"z"} else {"."};
+    let s = if state.cc.z {"s"} else {"."};
+    let p = if state.cc.z {"p"} else {"."};
+    let cy = if state.cc.z {"cy"} else {"."};
+    let ac = if state.cc.z {"ac"} else {"."};
+    let pad = if state.cc.z {"pad"} else {"."};
+    debug!("{:19} a:{:02x} bc:{:02x}{:02x} de:{:02x}{:02x} hl:{:02x}{:02x} pc:{:04x} sp:{:04x} {}{}{}{}{}{}", op, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.pc, state.sp, z, s, p, cy, ac, pad);
+
     let code = state.get_and_advance();
 
     match code {

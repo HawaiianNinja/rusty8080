@@ -1,5 +1,8 @@
 # rusty8080
-A emulator for the 8080 CPU written in Rust. Based on the guide from [Emulator 101](http://emulator101.com). The [Intel 8080 programming manual](http://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf) is also handy.
+A emulator for the 8080 CPU written in Rust. Based on the guide from [Emulator 101](http://emulator101.com). Handy links:
+* [Intel 8080 programming manual](http://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf)
+* [Javascript emulator](https://bluishcoder.co.nz/js8080/)
+* [C emulator source code](https://github.com/kpmiller/emulator101)
 
 # Usage
 ```
