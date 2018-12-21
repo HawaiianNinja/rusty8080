@@ -278,8 +278,6 @@ pub fn disassemble_8080_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
         0xfd => { result +=          "NOP"; }
         0xfe => { result += &format!("CPI    #${:02x}", buff[pc + 1]); bytes_used = 2; }
         0xff => { result +=          "RST    7"; }
-
-        _ => { panic!("Unkown op code {:02x} ", code); }
     }
 
     return (result, bytes_used);

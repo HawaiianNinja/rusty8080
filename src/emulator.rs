@@ -94,7 +94,15 @@ pub fn emulate_op(state: &mut State8080) {
         }
         0x08 => {} // NOP
         0x09 => { dad(&mut state.h, &mut state.l, &mut state.b, &mut state.c, &mut state.cc); }
+        0x0a => { // LDAX B
+            let target = combine_registers(state.b, state.c) as usize;
+            state.a = state.memory[target];
+        }
         0x13 => { inx(&mut state.d, &mut state.e); }
+        0x1a => {
+            let target = combine_registers(state.d, state.e) as usize;
+            state.a = state.memory[target];
+        }
         0x23 => { inx(&mut state.h, &mut state.l); }
         0x33 => { state.sp += 1; }
         0x80 => { add(state.b, state); }
