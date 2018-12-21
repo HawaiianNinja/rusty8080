@@ -1,6 +1,6 @@
 use log::error;
 use log::debug;
-use crate::disassembler::disassemble_8080_op;
+use crate::disassembler::disassemble_op;
 
 const MAX_U8: u8 = <u8>::max_value();
 
@@ -48,7 +48,7 @@ impl State8080 {
             e: 0,
             h: 0,
             l: 0,
-            sp: 0, // Must be initialized by the program to somewhere not used to store game data or heap
+            sp: 0xf000, // Must be initialized by the program to somewhere not used to store game data or heap
             pc: 0,
             memory: game_data.clone(),
             cc: codes,
@@ -64,8 +64,8 @@ impl State8080 {
 }
 
 pub fn emulate_op(state: &mut State8080) {
-    let (op, _) = disassemble_8080_op(&state.memory, state.pc as usize);
-    debug!("{:22} pc: {:5} sp:{:5} a:{:3} b:{:3} c:{:3} d:{:3} e:{:3} h:{:3} l:{:3} {:?}", op, state.pc, state.sp, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.cc);
+    let (op, _) = disassemble_op(&state.memory, state.pc as usize);
+    debug!("{:19} pc: {:4x} sp:{:4x} a:{:2x} b:{:2x} c:{:2x} d:{:2x} e:{:2x} h:{:2x} l:{:2x} {:?}", op, state.pc, state.sp, state.a, state.b, state.c, state.d, state.e, state.h, state.l, state.cc);
     let code = state.get_and_advance();
 
     match code {
@@ -98,13 +98,32 @@ pub fn emulate_op(state: &mut State8080) {
             let target = combine_registers(state.b, state.c) as usize;
             state.a = state.memory[target];
         }
+        0x0b => { dcx(&mut state.b, &mut state.c); }
+
+        0x11 => {
+            state.e = state.get_and_advance();
+            state.d = state.get_and_advance();
+        }
         0x13 => { inx(&mut state.d, &mut state.e); }
         0x1a => {
             let target = combine_registers(state.d, state.e) as usize;
             state.a = state.memory[target];
         }
+        0x1b => { dcx(&mut state.d, &mut state.e); }
+
+        0x21 => {
+            state.l = state.get_and_advance();
+            state.h = state.get_and_advance();
+        }
         0x23 => { inx(&mut state.h, &mut state.l); }
+        0x2b => { dcx(&mut state.h, &mut state.l); }
+        0x31 => {
+            let lower = state.get_and_advance();
+            state.sp = combine_registers(state.get_and_advance(), lower); }
         0x33 => { state.sp += 1; }
+
+        0x77 => { state.memory[combine_registers(state.h, state.l) as usize] = state.a; }
+
         0x80 => { add(state.b, state); }
         0x81 => { add(state.c, state); }
         0x82 => { add(state.d, state); }
@@ -167,7 +186,7 @@ pub fn emulate_op(state: &mut State8080) {
 
         }
 
-        _ => { error!("Skipped {}", code); }
+        _ => { error!("Skipped {:2x}", code); }
     }
 }
 
@@ -186,8 +205,7 @@ fn jmp(state: &mut State8080) {
 }
 
 fn combine_registers(upper: u8, lower: u8) -> u16 {
-    let mut destination: u16 = upper as u16;
-    destination <<= 8;
+    let mut  destination = (upper as u16) << 8;
     destination |= lower as u16;
     return destination;
 }
@@ -267,6 +285,24 @@ fn inx(upper: &mut u8, lower: &mut u8) {
     }
 }
 
+// inx B -> BC + 1 add one to lower then carry to upper
+fn dcx(upper: &mut u8, lower: &mut u8) {
+    let mut carry = false;
+    if *lower > 0 {
+        *lower -= 1;
+    } else {
+        carry = true;
+    }
+
+    if carry {
+        if *upper > 0 {
+            *upper -= 1;
+        } else {
+            *upper = 0xff;
+        }
+    }
+}
+
 fn inr(value: &mut u8, codes : &mut ConditionCodes) {
     let answer : u16 = *value as u16 + 1;
     update_flags(answer, codes);
@@ -274,9 +310,14 @@ fn inr(value: &mut u8, codes : &mut ConditionCodes) {
 }
 
 fn dcr(value: &mut u8, codes : &mut ConditionCodes) {
-    let answer : u16 = *value as u16 - 1;
-    update_flags(answer, codes);
-    *value = answer as u8;
+    if *value > 0 {
+        let answer: u16 = *value as u16 - 1;
+        update_flags(answer, codes);
+        *value = answer as u8;
+    } else {
+        *value = 0xff;
+        update_flags(*value as u16, codes);
+    }
 }
 
 #[cfg(test)]
@@ -363,6 +404,7 @@ mod tests {
         assert_eq!(true, parity(0b01000100, 8));
         assert_eq!(true, parity(0b0100000, 2));
         assert_eq!(true, parity(0b011111111, 8));
+        assert_eq!(true, parity(0xff, 8));
     }
 
     #[test]

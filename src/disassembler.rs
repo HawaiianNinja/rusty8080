@@ -1,11 +1,10 @@
 
-pub fn disassemble_8080_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
-    let mut result = format!("{:04x} ", pc);
+pub fn disassemble_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
     let mut bytes_used = 1;
 
     let code = buff.get(pc)
         .expect(&format!("Failed to read buffer at {}", pc));
-
+    let mut result = format!("{:02x} ", code);
     match code {
         0x00 => { result +=          "NOP"; }
         0x01 => { result += &format!("LXI    B,#${:02x}{:02x}", buff[pc + 2], buff[pc + 1]); bytes_used = 3; }
@@ -132,8 +131,8 @@ pub fn disassemble_8080_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
         0x73 => { result +=          "MOV    M,E"; }
         0x74 => { result +=          "MOV    M,H"; }
         0x75 => { result +=          "MOV    M,L"; }
-        0x76 => { result +=          "MOV    M,M"; }
-        0x77 => { result +=          "HLT"; }
+        0x76 => { result +=          "HLT"; }
+        0x77 => { result +=          "MOV    M,B"; }
         0x78 => { result +=          "MOV    A,B"; }
         0x79 => { result +=          "MOV    A,C"; }
         0x7a => { result +=          "MOV    A,D"; }
@@ -278,6 +277,7 @@ pub fn disassemble_8080_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
         0xfd => { result +=          "NOP"; }
         0xfe => { result += &format!("CPI    #${:02x}", buff[pc + 1]); bytes_used = 2; }
         0xff => { result +=          "RST    7"; }
+        _ => {result += &format!("Unkown code {}", code); }
     }
 
     return (result, bytes_used);

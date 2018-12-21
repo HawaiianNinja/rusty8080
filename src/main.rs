@@ -27,7 +27,7 @@ fn main() {
             .short("n")
             .long("numOps")
             .default_value("10")
-            .help("Number of operations to disassemble"))
+            .help("Number of operations"))
         .arg(Arg::with_name("file")
             .short("f")
             .long("file")
@@ -47,12 +47,12 @@ fn main() {
     log4rs::init_file(log_file, Default::default()).unwrap();
 
     let filename = args.value_of("file").unwrap();
+    let num_operations = args.value_of("numOps").unwrap().parse::<usize>().unwrap_or(10);
 
     if args.is_present("emulate") {
-        emulate(filename);
+        emulate(filename, num_operations);
     } else {
-        let num_bytes = args.value_of("numOps").unwrap().parse::<usize>().unwrap_or(10);
-        disassemble(filename, num_bytes);
+        disassemble(filename, num_operations);
     }
 }
 
@@ -62,20 +62,20 @@ fn disassemble(filename: &str, requested_bytes: usize) {
         .expect("Could not open file");
     let mut program_counter: usize = 0;
     while program_counter < requested_bytes && program_counter < contents.len() {
-        let (code, byes_used) = disassembler::disassemble_8080_op(&contents, program_counter);
+        let (code, byes_used) = disassembler::disassemble_op(&contents, program_counter);
         program_counter += byes_used;
         println!("{}", code);
     }
 }
 
-fn emulate(filename: &str) {
+fn emulate(filename: &str, num_operations: usize) {
     info!("Opening: {}", filename);
     let mut game_memory = fs::read(filename)
         .expect("Could not open file");
     game_memory.resize(64_000, 0);
 
     let mut state = emulator::State8080::new(game_memory);
-    for _ in 0..10 {
+    for _ in 0..num_operations {
         emulator::emulate_op(&mut state);
     }
 }
