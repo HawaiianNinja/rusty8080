@@ -76,6 +76,6 @@ fn emulate(filename: &str, num_operations: usize) {
 
     let mut state = emulator::State8080::new(game_memory);
     for _ in 0..num_operations {
-        emulator::emulate_op(&mut state);
+        state.emulate_op();
     }
 }

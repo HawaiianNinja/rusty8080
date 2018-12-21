@@ -8,7 +8,7 @@ A emulator for the 8080 CPU written in Rust. Based on the guide from [Emulator 1
 ```
 $ cargo run -- -e -f invaders.atari -l log4rs.yaml
 Opening: invaders.atari
-0000 NOP               pc:     0 sp:    0 a:  0 b:  0 c:  0 d:  0 e:  0 h:  0 l:  0 ConditionCodes { z: false, s: false, p: false, cy: false, ac: false, pad: false }
+00 NOP              a:00 bc:0000 de:0000 hl:0000 pc:0000 sp:f000 ......
 ...
 
 $ cargo run -- -h
