@@ -10,6 +10,7 @@ use crate::disassembler::disassemble_op;
 use crate::emulator::utils::*;
 use crate::emulator::branch::*;
 use crate::emulator::arithmetic::*;
+use crate::emulator::logical::*;
 
 #[derive(Debug)]
 pub struct ConditionCodes {
@@ -101,17 +102,8 @@ impl State8080 {
             0x03 => { inx(&mut self.b, &mut self.c); }
             0x04 => { inr(&mut self.b, &mut self.cc); }
             0x05 => { dcr(&mut self.b, &mut self.cc); }
-            0x06 => { //MVI B
-                self.b = self.get_and_advance();
-            }
-            0x07 => { // RLC with carry
-                let acc = self.a;
-                self.cc.cy = acc >> 7 == 1;
-                self.a = acc << 1;
-                if self.cc.cy {
-                    self.a += 1;
-                }
-            }
+            0x06 => { self.b = self.get_and_advance(); }
+            0x07 => { rotate_left_with_carry(&mut self.a, &mut self.cc) }
             0x08 => {} // NOP
             0x09 => { dad(&mut self.h, &mut self.l, &mut self.b, &mut self.c, &mut self.cc); }
             0x0a => { // LDAX B
@@ -119,17 +111,30 @@ impl State8080 {
                 self.a = self.memory[target];
             }
             0x0b => { dcx(&mut self.b, &mut self.c); }
+            0x0c => { inr(&mut self.c, &mut self.cc); }
+            0x0d => { dcr(&mut self.c, &mut self.cc); }
+            0x0e => { self.c = self.get_and_advance();}
+            0x0f => { rotate_right_with_carry(&mut self.a, &mut self.cc); }
 
+            0x10 => {} // NOP
             0x11 => {
                 self.e = self.get_and_advance();
                 self.d = self.get_and_advance();
             }
+            0x12 => {
+                let destination = combine_registers(self.d, self.e) as usize;
+                self.memory[destination] = self.a;
+            }
             0x13 => { inx(&mut self.d, &mut self.e); }
+            0x14 => { inr(&mut self.d, &mut self.cc); }
+            0x15 => { dcr(&mut self.d, &mut self.cc); }
+            0x16 => { self.d = self.get_and_advance(); }
             0x1a => {
                 let target = combine_registers(self.d, self.e) as usize;
                 self.a = self.memory[target];
             }
             0x1b => { dcx(&mut self.d, &mut self.e); }
+            0x1e => { self.e = self.get_and_advance(); }
 
             0x21 => {
                 self.l = self.get_and_advance();
