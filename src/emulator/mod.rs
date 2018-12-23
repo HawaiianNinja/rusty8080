@@ -103,7 +103,7 @@ impl State8080 {
             0x04 => { inr(&mut self.b, &mut self.cc); }
             0x05 => { dcr(&mut self.b, &mut self.cc); }
             0x06 => { self.b = self.get_and_advance(); }
-            0x07 => { rotate_left_with_carry(&mut self.a, &mut self.cc) }
+            0x07 => { rlc(self) }
             0x08 => {} // NOP
             0x09 => { dad(&mut self.h, &mut self.l, &mut self.b, &mut self.c, &mut self.cc); }
             0x0a => { // LDAX B
@@ -114,7 +114,7 @@ impl State8080 {
             0x0c => { inr(&mut self.c, &mut self.cc); }
             0x0d => { dcr(&mut self.c, &mut self.cc); }
             0x0e => { self.c = self.get_and_advance();}
-            0x0f => { rotate_right_with_carry(&mut self.a, &mut self.cc); }
+            0x0f => { rrc(self); }
 
             0x10 => {} // NOP
             0x11 => {
@@ -129,12 +129,16 @@ impl State8080 {
             0x14 => { inr(&mut self.d, &mut self.cc); }
             0x15 => { dcr(&mut self.d, &mut self.cc); }
             0x16 => { self.d = self.get_and_advance(); }
+            0x17 => { ral(self); }
+            0x18 => {} // NOP
+            0x19 => { dad(&mut self.h, &mut self.l, &mut self.d, &mut self.e, &mut self.cc); }
             0x1a => {
                 let target = combine_registers(self.d, self.e) as usize;
                 self.a = self.memory[target];
             }
             0x1b => { dcx(&mut self.d, &mut self.e); }
             0x1e => { self.e = self.get_and_advance(); }
+            0x1f => { rar(self); }
 
             0x21 => {
                 self.l = self.get_and_advance();
