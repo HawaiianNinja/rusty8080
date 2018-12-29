@@ -40,7 +40,7 @@ pub fn disassemble_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
         0x1e => { result += &format!("MVI    E,#${:02x}", buff[pc + 1]); bytes_used = 2; }
         0x1f => { result +=          "RAR"; }
 
-        0x20 => { result +=          "RIM"; }
+        0x20 => { result +=          "NOP"; }
         0x21 => { result += &format!("LXI    H,#${:02x}{:02x}", buff[pc + 2], buff[pc + 1]); bytes_used = 3; }
         0x22 => { result += &format!("SHLD   ${:02x}{:02x}", buff[pc + 2], buff[pc + 1]); bytes_used = 3; }
         0x23 => { result +=          "INX    H"; }

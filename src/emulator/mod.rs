@@ -137,12 +137,20 @@ impl State8080 {
                 self.a = self.memory[target];
             }
             0x1b => { dcx(&mut self.d, &mut self.e); }
+            0x1c => { inr(&mut self.e, &mut self.cc); }
+            0x1d => { dcr(&mut self.e, &mut self.cc); }
             0x1e => { self.e = self.get_and_advance(); }
             0x1f => { rar(self); }
 
-            0x21 => {
+            0x20 => {} //NOP
+            0x21 => { // LXI H
                 self.l = self.get_and_advance();
                 self.h = self.get_and_advance();
+            }
+            0x22 => { // SHLD Store H and L Direct
+                let address = self.get_double() as usize;
+                self.memory[address] = self.l;
+                self.memory[address + 1] = self.h;
             }
             0x23 => { inx(&mut self.h, &mut self.l); }
             0x2b => { dcx(&mut self.h, &mut self.l); }
@@ -191,5 +199,25 @@ impl State8080 {
 
             _ => { error!("Skipped {:2x}", code); }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::emulator::test_utils::*;
+
+    #[test]
+    fn test_shld() {
+        let mut state = setup_state();
+        state.memory[0] = 0x22; // SHLD op code
+        state.memory[1] = 0x11; // Lower part of address
+        state.memory[2] = 0x33; // Upper part of address
+        state.h = 0xaa;
+        state.l = 0xbb;
+
+        state.emulate_op();
+
+        assert_eq!(state.memory[0x3311], 0xbb);
+        assert_eq!(state.memory[0x3312], 0xaa);
     }
 }
