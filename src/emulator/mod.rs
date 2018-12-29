@@ -105,7 +105,7 @@ impl State8080 {
             0x06 => { self.b = self.get_and_advance(); }
             0x07 => { rlc(self) }
             0x08 => {} // NOP
-            0x09 => { dad(&mut self.h, &mut self.l, &mut self.b, &mut self.c, &mut self.cc); }
+            0x09 => { dad(&mut self.h, &mut self.l, self.b, self.c, &mut self.cc); }
             0x0a => { // LDAX B
                 let target = combine_registers(self.b, self.c) as usize;
                 self.a = self.memory[target];
@@ -131,7 +131,7 @@ impl State8080 {
             0x16 => { self.d = self.get_and_advance(); }
             0x17 => { ral(self); }
             0x18 => {} // NOP
-            0x19 => { dad(&mut self.h, &mut self.l, &mut self.d, &mut self.e, &mut self.cc); }
+            0x19 => { dad(&mut self.h, &mut self.l,  self.d, self.e, &mut self.cc); }
             0x1a => {
                 let target = combine_registers(self.d, self.e) as usize;
                 self.a = self.memory[target];
@@ -153,7 +153,26 @@ impl State8080 {
                 self.memory[address + 1] = self.h;
             }
             0x23 => { inx(&mut self.h, &mut self.l); }
+            0x24 => { inr(&mut self.h, &mut self.cc); }
+            0x25 => { dcr(&mut self.h, &mut self.cc); }
+            0x26 => { self.h = self.get_and_advance(); }
+            // 0x27 DAA
+            0x28 => {} // NOP
+            0x29 => {
+                let h = self.h.clone();
+                let l = self.l.clone();
+                dad(&mut self.h, &mut self.l, h, l, &mut self.cc);
+            }
+            0x2a => {
+                let address = self.get_double() as usize;
+                self.l = self.memory[address];
+                self.h = self.memory[address + 1];
+            }
             0x2b => { dcx(&mut self.h, &mut self.l); }
+            0x2c => { inr(&mut self.l, &mut self.cc); }
+            0x2d => { dcr(&mut self.l, &mut self.cc); }
+            0x2e => { self.l = self.get_and_advance(); }
+            0x2f => { self.a = !self.a; }
 
             0x31 => { self.sp = self.get_double(); }
             0x33 => { self.sp += 1; }
@@ -219,5 +238,17 @@ mod tests {
 
         assert_eq!(state.memory[0x3311], 0xbb);
         assert_eq!(state.memory[0x3312], 0xaa);
+    }
+
+    #[test]
+    fn test_cma() {
+        let mut state = setup_state();
+        state.memory[0] = 0x2f; // CMA op code
+        state.a = 0b01010001;
+
+        state.emulate_op();
+
+        assert_eq!(state.a, 0b10101110);
+
     }
 }

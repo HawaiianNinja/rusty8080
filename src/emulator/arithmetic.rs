@@ -19,9 +19,9 @@ pub fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
 }
 
 // dad B = h,l = b,c + h,l
-pub fn dad(upper_save: &mut u8, lower_save: &mut u8, upper2: &mut u8, lower2: &mut u8, cc: &mut ConditionCodes) {
-    let temp_lower: u16 = *lower_save as u16 + *lower2 as u16;
-    let mut temp_upper : u16 = *upper_save as u16 + *upper2 as u16;
+pub fn dad(upper_save: &mut u8, lower_save: &mut u8, upper2: u8, lower2: u8, cc: &mut ConditionCodes) {
+    let temp_lower: u16 = *lower_save as u16 + lower2 as u16;
+    let mut temp_upper : u16 = *upper_save as u16 + upper2 as u16;
     if temp_lower > MAX_U8 as u16 {
         *lower_save = 0;
         temp_upper += 1;
