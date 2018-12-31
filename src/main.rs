@@ -3,6 +3,7 @@ use clap::App;
 use clap::Arg;
 use clap::ArgGroup;
 use log::info;
+use piston_window::*;
 
 mod disassembler;
 mod emulator;
@@ -69,6 +70,18 @@ fn disassemble(filename: &str, requested_bytes: usize) {
 }
 
 fn emulate(filename: &str, num_operations: usize) {
+    let mut window: PistonWindow =
+        WindowSettings::new("Hello Piston!", [640, 480])
+            .exit_on_esc(true).build().unwrap();
+    while let Some(event) = window.next() {
+        window.draw_2d(&event, |context, graphics| {
+            clear([1.0; 4], graphics);
+            rectangle([1.0, 0.0, 0.0, 1.0], // red
+                      [0.0, 0.0, 100.0, 100.0],
+                      context.transform,
+                      graphics);
+        });
+    }
     info!("Opening: {}", filename);
     let mut game_memory = fs::read(filename)
         .expect("Could not open file");
