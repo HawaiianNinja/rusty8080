@@ -102,7 +102,7 @@ fn emulate(filename: &str, num_operations: usize) {
     }
     info!("Opening: {}", filename);
     let mut game_memory = fs::read(filename).expect("Could not open file");
-    game_memory.resize(64_000, 0);
+    game_memory.resize(65_536, 0);
 
     let mut state = emulator::State8080::new(game_memory);
     for _ in 0..num_operations {

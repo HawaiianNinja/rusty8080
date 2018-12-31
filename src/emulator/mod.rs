@@ -3,6 +3,7 @@ mod test_utils;
 mod arithmetic;
 mod branch;
 mod logical;
+mod memory;
 
 use log::error;
 use log::debug;
@@ -11,6 +12,7 @@ use crate::emulator::utils::*;
 use crate::emulator::branch::*;
 use crate::emulator::arithmetic::*;
 use crate::emulator::logical::*;
+use crate::emulator::memory::mov;
 
 #[derive(Debug)]
 pub struct ConditionCodes {
@@ -73,6 +75,11 @@ impl State8080 {
         let lower = self.get_at_pc();
         let upper = self.get_at_pc();
         return combine(upper, lower);
+    }
+
+    fn get_at_m(&mut self) -> u8 {
+        let m = self.m() as usize;
+        return self.memory[m];
     }
 
     fn m(&mut self) -> u16 {
@@ -201,6 +208,44 @@ impl State8080 {
                 let address = self.get_double_at_pc() as usize;
                 self.a = self.memory[address];
             }
+            0x3b => {
+                let (mut upper, mut lower) = split(self.sp);
+                dcx(&mut upper, &mut lower);
+                self.sp = combine(upper, lower);
+            }
+            0x3c => { inr(&mut self.a, &mut self.cc); }
+            0x3d => { dcr(&mut self.a, &mut self.cc); }
+            0x3e => { self.a = self.get_at_pc(); }
+            0x3f => { self.cc.cy = !self.cc.cy; }
+
+            0x40 => {
+                let copy = self.b;
+                mov(&mut self.b, copy);
+            }
+            0x41 => { mov(&mut self.b,self.c); }
+            0x42 => { mov(&mut self.b,self.d); }
+            0x43 => { mov(&mut self.b,self.e); }
+            0x44 => { mov(&mut self.b,self.h); }
+            0x45 => { mov(&mut self.b,self.l); }
+            0x46 => {
+                let num = self.get_at_m();
+                mov(&mut self.b,num);
+            }
+            0x47 => { mov(&mut self.b,self.a); }
+            0x48 => { mov(&mut self.c,self.b); }
+            0x49 => {
+                let copy = self.c;
+                mov(&mut self.c, copy);
+            }
+            0x4a => { mov(&mut self.c,self.d); }
+            0x4b => { mov(&mut self.c,self.e); }
+            0x4c => { mov(&mut self.c,self.h); }
+            0x4d => { mov(&mut self.c,self.l); }
+            0x4e => {
+                let num = self.get_at_m();
+                mov(&mut self.c,num);
+            }
+            0x4f => { mov(&mut self.c,self.a); }
 
             0x77 => { self.memory[combine(self.h, self.l) as usize] = self.a; }
 
@@ -258,9 +303,7 @@ mod tests {
         state.memory[2] = 0x33; // Upper part of address
         state.h = 0xaa;
         state.l = 0xbb;
-
         state.emulate_op();
-
         assert_eq!(state.memory[0x3311], 0xbb);
         assert_eq!(state.memory[0x3312], 0xaa);
     }
@@ -270,9 +313,33 @@ mod tests {
         let mut state = setup_state();
         state.memory[0] = 0x2f; // CMA op code
         state.a = 0b01010001;
-
         state.emulate_op();
-
         assert_eq!(state.a, 0b10101110);
+    }
+
+    #[test]
+    fn test_dcx_sp() {
+        let mut state = setup_state();
+        state.memory[0] = 0x3b; // DCX SP op code
+        state.sp = 0xabcd;
+        state.emulate_op();
+        assert_eq!(state.sp, 0xabcc);
+    }
+
+    #[test]
+    fn test_move() {
+        let mut state = setup_state();
+        state.memory[0] = 0x41; // MOV B, C op code
+        state.memory[1] = 0x4a; // MOV C, D op code
+        state.b = 0x0b;
+        state.c = 0x0c;
+        state.d = 0x0d;
+        state.emulate_op();
+        assert_eq!(state.b, 0xc);
+        assert_eq!(state.c, 0xc);
+        state.emulate_op();
+        assert_eq!(state.c, 0xd);
+        assert_eq!(state.d, 0xd);
+
     }
 }
