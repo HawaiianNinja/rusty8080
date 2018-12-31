@@ -267,7 +267,22 @@ impl State8080 {
             0x6e => { self.l = self.get_at_m(); }
             0x6f => { self.l = self.a; }
 
-            0x77 => { self.memory[combine(self.h, self.l) as usize] = self.a; }
+            0x70 => { self.memory[combine(self.h, self.l) as usize] = self.b; }
+            0x71 => { self.memory[combine(self.h, self.l) as usize] = self.c; }
+            0x72 => { self.memory[combine(self.h, self.l) as usize] = self.d; }
+            0x73 => { self.memory[combine(self.h, self.l) as usize] = self.e; }
+            0x74 => { self.memory[combine(self.h, self.l) as usize] = self.h; }
+            0x76 => { self.memory[combine(self.h, self.l) as usize] = self.l; }
+            0x76 => {} // HLT
+            0x77 => { self.memory[combine(self.h, self.l) as usize] = self.b; }
+            0x78 => { self.a = self.b; }
+            0x79 => { self.a = self.c; }
+            0x7a => { self.a = self.d; }
+            0x7b => { self.a = self.e; }
+            0x7c => { self.a = self.h; }
+            0x7d => { self.a = self.l; }
+            0x7e => { self.a = self.get_at_m(); }
+            0x7f => { self.a = self.a; }
 
             0x80 => { add(self.b, self); }
             0x81 => { add(self.c, self); }
@@ -275,9 +290,9 @@ impl State8080 {
             0x83 => { add(self.e, self); }
             0x84 => { add(self.h, self); }
             0x85 => { add(self.l, self); }
+            0x85 => { add(self.l, self); }
             0x86 => { // ADD M
-                let address = combine(self.h, self.l) as usize;
-                let val = self.memory[address];
+                let val = self.get_at_m();
                 add(val, self);
             }
             0x87 => { adc(self.a, self); }
