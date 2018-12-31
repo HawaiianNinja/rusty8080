@@ -3,7 +3,6 @@ mod test_utils;
 mod arithmetic;
 mod branch;
 mod logical;
-mod memory;
 
 use log::error;
 use log::debug;
@@ -12,7 +11,6 @@ use crate::emulator::utils::*;
 use crate::emulator::branch::*;
 use crate::emulator::arithmetic::*;
 use crate::emulator::logical::*;
-use crate::emulator::memory::mov;
 
 #[derive(Debug)]
 pub struct ConditionCodes {
@@ -218,34 +216,56 @@ impl State8080 {
             0x3e => { self.a = self.get_at_pc(); }
             0x3f => { self.cc.cy = !self.cc.cy; }
 
-            0x40 => {
-                let copy = self.b;
-                mov(&mut self.b, copy);
-            }
-            0x41 => { mov(&mut self.b,self.c); }
-            0x42 => { mov(&mut self.b,self.d); }
-            0x43 => { mov(&mut self.b,self.e); }
-            0x44 => { mov(&mut self.b,self.h); }
-            0x45 => { mov(&mut self.b,self.l); }
-            0x46 => {
-                let num = self.get_at_m();
-                mov(&mut self.b,num);
-            }
-            0x47 => { mov(&mut self.b,self.a); }
-            0x48 => { mov(&mut self.c,self.b); }
-            0x49 => {
-                let copy = self.c;
-                mov(&mut self.c, copy);
-            }
-            0x4a => { mov(&mut self.c,self.d); }
-            0x4b => { mov(&mut self.c,self.e); }
-            0x4c => { mov(&mut self.c,self.h); }
-            0x4d => { mov(&mut self.c,self.l); }
-            0x4e => {
-                let num = self.get_at_m();
-                mov(&mut self.c,num);
-            }
-            0x4f => { mov(&mut self.c,self.a); }
+            0x40 => { self.b = self.b; }
+            0x41 => { self.b = self.c; }
+            0x42 => { self.b = self.d; }
+            0x43 => { self.b = self.e; }
+            0x44 => { self.b = self.h; }
+            0x45 => { self.b = self.l; }
+            0x46 => { self.b = self.get_at_m(); }
+            0x47 => { self.b = self.a; }
+            0x48 => { self.c = self.b; }
+            0x49 => { self.c = self.c; }
+            0x4a => { self.c = self.d; }
+            0x4b => { self.c = self.e; }
+            0x4c => { self.c = self.h; }
+            0x4d => { self.c = self.l; }
+            0x4e => { self.c = self.get_at_m(); }
+            0x4f => { self.c = self.a; }
+
+            0x50 => { self.d = self.b; }
+            0x51 => { self.d = self.c; }
+            0x52 => { self.d = self.d; }
+            0x53 => { self.d = self.e; }
+            0x54 => { self.d = self.h; }
+            0x55 => { self.d = self.l; }
+            0x56 => { self.d = self.get_at_m(); }
+            0x57 => { self.d = self.a; }
+            0x58 => { self.e = self.b; }
+            0x59 => { self.e = self.c; }
+            0x5a => { self.e = self.d; }
+            0x5b => { self.e = self.e; }
+            0x5c => { self.e = self.h; }
+            0x5d => { self.e = self.l; }
+            0x5e => { self.e = self.get_at_m(); }
+            0x5f => { self.e = self.a; }
+
+            0x60 => { self.h = self.b; }
+            0x61 => { self.h = self.c; }
+            0x62 => { self.h = self.d; }
+            0x63 => { self.h = self.e; }
+            0x64 => { self.h = self.h; }
+            0x65 => { self.h = self.l; }
+            0x66 => { self.h = self.get_at_m(); }
+            0x67 => { self.h = self.a; }
+            0x68 => { self.l = self.b; }
+            0x69 => { self.l = self.c; }
+            0x6a => { self.l = self.d; }
+            0x6b => { self.l = self.e; }
+            0x6c => { self.l = self.h; }
+            0x6d => { self.l = self.l; }
+            0x6e => { self.l = self.get_at_m(); }
+            0x6f => { self.l = self.a; }
 
             0x77 => { self.memory[combine(self.h, self.l) as usize] = self.a; }
 
