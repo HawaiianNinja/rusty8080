@@ -1,8 +1,8 @@
-use crate::emulator::State8080;
-use crate::emulator::utils::update_flags;
-use crate::emulator::ConditionCodes;
 use crate::emulator::utils::combine;
 use crate::emulator::utils::split;
+use crate::emulator::utils::update_flags;
+use crate::emulator::ConditionCodes;
+use crate::emulator::State8080;
 
 const MAX_U8: u8 = <u8>::max_value();
 const MAX_U16: u16 = <u16>::max_value();
@@ -16,7 +16,7 @@ pub fn adc(value: u8, state: &mut State8080) {
 }
 
 fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
-    let answer :u16 = state.a as u16 + value as u16 + if use_carry && state.cc.cy {1} else {0};
+    let answer: u16 = state.a as u16 + value as u16 + if use_carry && state.cc.cy { 1 } else { 0 };
     update_flags(answer, &mut state.cc);
     state.a = answer as u8;
 }
@@ -67,13 +67,13 @@ pub fn dcx(upper: &mut u8, lower: &mut u8) {
     }
 }
 
-pub fn inr(value: &mut u8, codes : &mut ConditionCodes) {
-    let answer : u16 = *value as u16 + 1;
+pub fn inr(value: &mut u8, codes: &mut ConditionCodes) {
+    let answer: u16 = *value as u16 + 1;
     update_flags(answer, codes);
     *value = answer as u8;
 }
 
-pub fn dcr(value: &mut u8, codes : &mut ConditionCodes) {
+pub fn dcr(value: &mut u8, codes: &mut ConditionCodes) {
     if *value > 0 {
         let answer: u16 = *value as u16 - 1;
         update_flags(answer, codes);
@@ -86,8 +86,8 @@ pub fn dcr(value: &mut u8, codes : &mut ConditionCodes) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::test_utils::*;
     use crate::emulator::arithmetic::*;
+    use crate::emulator::test_utils::*;
     use crate::emulator::ConditionCodes;
 
     #[test]
@@ -120,7 +120,6 @@ mod tests {
         assert_eq!(false, state.cc.cy);
         assert_eq!(true, state.cc.p); // 000
 
-
         add(1, &mut state);
         assert_eq!(1, state.a);
         assert_eq!(false, state.cc.z);
@@ -141,7 +140,6 @@ mod tests {
         assert_eq!(true, state.cc.s);
         assert_eq!(false, state.cc.cy);
         assert_eq!(true, state.cc.p); // 11001010
-
 
         add(202, &mut state);
         // 202 + 202 = 404 = 0x194, which gets truncated to 0x94 which is 148
@@ -181,7 +179,7 @@ mod tests {
             pad: false,
         };
 
-        let mut test :u8 = 0;
+        let mut test: u8 = 0;
         inr(&mut test, &mut codes);
         assert_eq!(test, 1);
         assert_eq!(false, codes.z);

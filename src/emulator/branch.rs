@@ -1,5 +1,5 @@
-use crate::emulator::State8080;
 use crate::emulator::utils::combine;
+use crate::emulator::State8080;
 
 pub fn conditional_jmp(condition: bool, state: &mut State8080) {
     if condition {

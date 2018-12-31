@@ -1,7 +1,7 @@
 use crate::emulator::ConditionCodes;
 
 pub fn combine(upper: u8, lower: u8) -> u16 {
-    let mut  destination = (upper as u16) << 8;
+    let mut destination = (upper as u16) << 8;
     destination |= lower as u16;
     return destination;
 }
@@ -12,22 +12,21 @@ pub fn split(num: u16) -> (u8, u8) {
     return (upper, lower);
 }
 
-pub fn update_flags(value : u16, codes : &mut ConditionCodes) {
+pub fn update_flags(value: u16, codes: &mut ConditionCodes) {
     codes.z = value as u8 & 0xff == 0;
     codes.s = value as u8 & 0x80 > 0;
     codes.cy = value > 0xff;
     codes.p = parity(value as usize, 8);
 }
 
-fn parity(value_to_check: usize, size: usize) -> bool
-{
+fn parity(value_to_check: usize, size: usize) -> bool {
     let mut set_bits = 0;
-    let mut mask : usize = 1;
+    let mut mask: usize = 1;
     mask = mask << size; // 0xff
     mask -= 1; // 0xfe
     let mut temp = value_to_check & mask;
     for _number in 0..size {
-        if temp & 0x1  == 0x1 {
+        if temp & 0x1 == 0x1 {
             set_bits += 1;
         }
         temp = temp >> 1;
@@ -37,8 +36,8 @@ fn parity(value_to_check: usize, size: usize) -> bool
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::utils::parity;
     use crate::emulator::utils::combine;
+    use crate::emulator::utils::parity;
     use crate::emulator::utils::split;
 
     #[test]
