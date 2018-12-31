@@ -1,8 +1,11 @@
 use crate::emulator::State8080;
 use crate::emulator::utils::update_flags;
 use crate::emulator::ConditionCodes;
+use crate::emulator::utils::combine;
+use crate::emulator::utils::split;
 
 const MAX_U8: u8 = <u8>::max_value();
+const MAX_U16: u16 = <u16>::max_value();
 
 pub fn add(value: u8, state: &mut State8080) {
     add_core(value, state, false);
@@ -12,29 +15,19 @@ pub fn adc(value: u8, state: &mut State8080) {
     add_core(value, state, true);
 }
 
-pub fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
+fn add_core(value: u8, state: &mut State8080, use_carry: bool) {
     let answer :u16 = state.a as u16 + value as u16 + if use_carry && state.cc.cy {1} else {0};
     update_flags(answer, &mut state.cc);
     state.a = answer as u8;
 }
 
-// dad B = h,l = b,c + h,l
-pub fn dad(upper_save: &mut u8, lower_save: &mut u8, upper2: u8, lower2: u8, cc: &mut ConditionCodes) {
-    let temp_lower: u16 = *lower_save as u16 + lower2 as u16;
-    let mut temp_upper : u16 = *upper_save as u16 + upper2 as u16;
-    if temp_lower > MAX_U8 as u16 {
-        *lower_save = 0;
-        temp_upper += 1;
-    } else {
-        *lower_save = temp_lower as u8;
-    }
-    if temp_upper > MAX_U8 as u16{
-        cc.cy = true;
-        *upper_save = 0;
-    } else {
-        cc.cy = false;
-        *upper_save = temp_upper as u8;
-    }
+pub fn dad(num: u16, state: &mut State8080) {
+    let other = combine(state.h, state.l) as u32;
+    let answer = num as u32 + other;
+    state.cc.cy = answer > MAX_U16 as u32;
+    let (upper, lower) = split(answer as u16);
+    state.h = upper;
+    state.l = lower;
 }
 
 // inx B -> BC + 1 add one to lower then carry to upper
@@ -160,6 +153,24 @@ mod tests {
     }
 
     #[test]
+    fn test_dad() {
+        let mut state = setup_state();
+        dad(0x0001, &mut state);
+        assert_eq!(state.h, 0x00);
+        assert_eq!(state.l, 0x01);
+        assert_eq!(state.cc.cy, false);
+        dad(0x1001, &mut state);
+        assert_eq!(state.h, 0x10);
+        assert_eq!(state.l, 0x02);
+        assert_eq!(state.cc.cy, false);
+        //0x1002 + 0xfefe = 0x10f00 becomes 0x0f00
+        dad(0xfefe, &mut state);
+        assert_eq!(state.h, 0x0f);
+        assert_eq!(state.l, 0x00);
+        assert_eq!(state.cc.cy, true);
+    }
+
+    #[test]
     fn test_inr() {
         let mut codes = ConditionCodes {
             z: false,
@@ -199,6 +210,22 @@ mod tests {
         assert_eq!(false, codes.s);
         assert_eq!(true, codes.p);
         assert_eq!(true, codes.cy);
+    }
 
+    #[test]
+    fn test_inr_m() {
+        let mut state = setup_state();
+        state.memory[0] = 0x34; // CMA op code
+        state.memory[1] = 0x34; // CMA op code
+        state.h = 0x12;
+        state.l = 0xab;
+        assert_eq!(state.memory[0x12ab], 0);
+        state.emulate_op();
+        assert_eq!(state.memory[0x12ab], 1);
+
+        state.memory[0x12ab] = 0xff;
+        state.emulate_op();
+        assert_eq!(state.memory[0x12ab], 0);
+        assert_eq!(state.cc.cy, true);
     }
 }

@@ -57,7 +57,7 @@ pub fn disassemble_op(buff: &Vec<u8>, pc: usize) -> (String, usize) {
         0x2e => { result += &format!("MVI    L,#${:02x}", buff[pc + 1]); bytes_used = 2; }
         0x2f => { result +=          "CMA"; }
 
-        0x30 => { result +=          "SIM"; }
+        0x30 => { result +=          "NOP"; }
         0x31 => { result += &format!("LXI    SP,#${:02x}{:02x}", buff[pc + 2], buff[pc + 1]); bytes_used = 3; }
         0x32 => { result += &format!("STA    ${:02x}{:02x}", buff[pc + 2], buff[pc + 1]); bytes_used = 3; }
         0x33 => { result +=          "INX    SP"; }

@@ -1,5 +1,5 @@
 use crate::emulator::State8080;
-use crate::emulator::utils::combine_registers;
+use crate::emulator::utils::combine;
 
 pub fn conditional_jmp(condition: bool, state: &mut State8080) {
     if condition {
@@ -20,12 +20,12 @@ pub fn call(state: &mut State8080) {
 pub fn ret(state: &mut State8080) {
     let upper = state.memory[state.sp as usize];
     let lower = state.memory[(state.sp + 1) as usize];
-    state.pc = combine_registers(upper, lower);
+    state.pc = combine(upper, lower);
     state.sp += 2;
 }
 
 pub fn jmp(state: &mut State8080) {
-    state.pc = state.get_double();
+    state.pc = state.get_double_at_pc();
 }
 
 #[cfg(test)]
